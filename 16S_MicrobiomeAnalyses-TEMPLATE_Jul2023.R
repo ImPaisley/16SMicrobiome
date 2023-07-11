@@ -172,8 +172,178 @@ batchadj <- batch_correct("feature.csv", "metadata.csv")
 # YOU NEED TO USE THE BATCH CORRECTED FEATURE TABLE FOR THE REST OF THE
 # ANALYSES IF YOUR DATA WAS BATCH CORRECTED!!
 
+###### Generating Rarefaction Curve #######
+library(vegan)
+## assigning the batch corrected feature table to its own variable; MAKE SURE TO READ ROWNAMES
+rardat<-read.csv("feature_ADJUSTED.csv", header=TRUE, row.names=1, sep=',') 
 
+# samples are in columns and need to be in the rows so we need to flip or transpose the file
+# transpose the data to rows; transposing changes the data frame to a matrix!
+trans.rardat <- t(rardat)
+# check file to make sure it worked 
+trans.rardat[1:5,1:5] #shows rows 1 through 5 and the samples should now be the rows
+# assign the transformed data matrix into main data variable
+rardat <- trans.rardat
+# change back into data frame instead of matrix
+rardat <-as.data.frame(rardat)
+#check data file to make sure it looks okay 
+View(rardat)
 
+rowSums(rardat) #sums the value of each row in the data frame; 
+# this shows the total sequencing reads for each sample
 
+## Creating the rarefaction curve
+# count the number of species within each sample
+S <- specnumber(rardat)
+raremax <- min(rowSums(rardat)) # takes the sample with the lowest number of sequencing reads
 
+## Plotting the rarefaction curves
+# ** auto removes samples that have no reads **
 
+# creating color palette
+col <- c("darkred", "forestgreen", "hotpink", "blue")  # feel free to edit the colors
+                                                      # keep it between 3 and 5 colors
+grp <- factor(sample(seq_along(col), nrow(rardat), replace = TRUE))
+cols <- col[grp]
+
+# creating rarefaction curve
+# create the curve to estimate where the inflection point (the point at which 
+# most of the lines being to plateau) lies, then assign that value to the
+# variable "inflection" below
+rarecurve(rardat, step = 500, sample=raremax, col = cols, label = TRUE, 
+          main="Title", cex= 0.35, cex.axis= 0.95, cex.lab= 1, xlim=c(0,200000), 
+          xlab = "# of Sequencing Reads", ylab = "# of ASVs")
+inflection <- 10000 # insert your estimated inflection point value
+abline(0,0) # creates a vertical line at 0,0
+abline(v = inflection, col="black", lwd=1.4) # creates the inflection line at specified value
+                                             # feel free to change the line color and thickness (col and lwd)
+
+###### Reproducing Abundance Data using Batch-corrected Data ######
+### NOTE: If you ignore metadata, you will NOT be able to perform statistical
+###       analyses on your data, only taxonomic analyses.
+
+## RUN FUNCTIONS FIRST!
+# use "calculate_abund.metadta" if you have your metadata file
+# use "calculate_abund" if ignoring metadata (NO metadata file)
+calculate_abund.metadata <- function(feature_csv,metadata_csv){
+  library(vegan)
+  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1))) 
+  #transposed so that the row names are now the sample names and the ASVs are the columns
+  #BUT it is still a MATRIX
+  metadata <- read.csv(metadata_csv, header = TRUE, row.names = 1)
+  dat <- as.data.frame(dat)
+  typeof(dat) #list
+  common.rownames <- intersect(rownames(dat), rownames(metadata)) #returns the same row names found in each dataframe
+  dat <- dat[common.rownames,] #subsets dat to only include the same row names as metadata
+  write.csv(dat, "feature_ADJUSTED-Transposed_matched.csv")
+  metadata <- metadata[common.rownames,] #subsets metadata to only include the same row names as dat
+  write.csv(dat, "metadata_matched.csv")
+  otu.abund<-which(colSums(dat)>2) #removes singletons and doubletons
+  dat.dom<-dat[,otu.abund] #include dominant taxa
+  dat.pa<-decostand(dat.dom, method ="pa") #turns dat.dom into presence/absence data (1/0)
+  dat.otus.01per<-which(colSums(dat.pa) > (0.01*nrow(dat.pa)))
+  dat.01per<-dat.dom[,dat.otus.01per] #removed ASVs that occur less than 0.1%
+  write.csv(dat.01per, "feature_01percent.csv")
+  dat.otus.001per<-which(colSums(dat.pa) > (0.001*nrow(dat.pa)))
+  dat.001per<-dat.dom[,dat.otus.001per] #removed ASVs that occur less than 0.01%; increases the number of ASVs - includes more "microdiversity"
+  write.csv(dat.001per, "feature_001percent.csv")
+  dat.ra<-decostand(dat.01per, method = "total") #relative abundance of >1% taxa
+  write.csv(dat.ra, "relative-abundance.csv")
+  dfs_to_return <- list(as.data.frame(dat),as.data.frame(metadata),
+                        as.data.frame(dat.dom),as.data.frame(dat.pa),
+                        as.data.frame(dat.01per),as.data.frame(dat.001per),
+                        as.data.frame(dat.ra))
+  names(dfs_to_return) <- c("dat", "metadata","dat.dom","dat.pa","dat.01per","dat.001per","dat.ra")
+  return(dfs_to_return)
+}
+calculate_abund <- function(feature_csv){
+  library(vegan)
+  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1))) 
+  #transposed so that the row names are now the sample names and the ASVs are the columns
+  dat <- as.data.frame(dat)
+  write.csv(dat, "feature_ADJUSTED-Transposed.csv")
+  otu.abund<-which(colSums(dat)>2) #removes singletons and doubletons
+  dat.dom<-dat[,otu.abund] #include dominant taxa
+  dat.pa<-decostand(dat.dom, method ="pa") #turns dat.dom into presence/absence data (1/0)
+  dat.otus.01per<-which(colSums(dat.pa) > (0.01*nrow(dat.pa)))
+  dat.01per<-dat.dom[,dat.otus.01per] #removed ASVs that occur less than 0.1%
+  write.csv(dat.01per, "feature_01percent.csv")
+  dat.otus.001per<-which(colSums(dat.pa) > (0.001*nrow(dat.pa)))
+  dat.001per<-dat.dom[,dat.otus.001per] #removed ASVs that occur less than 0.01%; increases the number of ASVs - includes more "microdiversity"
+  write.csv(dat.001per, "feature_001percent.csv")
+  dat.ra<-decostand(dat.01per, method = "total") #relative abundance of >1% taxa
+  write.csv(dat.ra, "relative-abundance.csv")
+  dfs_to_return <- list(as.data.frame(dat),as.data.frame(dat.dom),as.data.frame(dat.pa),
+                        as.data.frame(dat.01per),as.data.frame(dat.001per),
+                        as.data.frame(dat.ra))
+  names(dfs_to_return) <- c("dat","dat.dom","dat.pa","dat.01per","dat.001per","dat.ra")
+  return(dfs_to_return)
+}
+
+## insert your files into the function
+# "feature.csv" = insert the name of your ADJUSTED feature table .csv file
+# "metadata.csv" = insert the name of your metadata .csv file 
+
+abund_metadata <- calculate_abund.metadata("feature_ADJUSTED.csv","metadata.csv") #if you have metadata
+abund <- calculate_abund("feature_ADJUSTED.csv") #if you have NO metadata
+
+# functions will return a list of data frames (must assign to a variable in order to access them):
+# dat = your original adjusted feature table that is transposed (or flipped)
+# metadata = your metadata table             **dat and metadata should have the same samples!**
+# dat.dom = the dominant ASVs found in dat
+# dat.pa = the dat.dom table transformed into presence/absence data
+# dat.01per = ASVs from dat that have an abundance of 0.1% or higher
+# dat.001per = ASVs from dat that have an abundance of 0.01% or higher
+# dat.ra = ASVs from dat.01per normalized into relative abundance
+
+## NOTE: The dat, dat.01per, dat.001per, and dat.ra tables are saved as csvs into your working directory
+
+# To save any dataframe (df) within the function result list as a single df in 
+# your workspace, simply assign it to its own variable
+# Example saving dat and metadata
+feature <- abund_metadata$dat
+metadta <- abund_metadata$metadata
+
+###### Alpha Diversity - Measures ###### 
+## Alpha diversity: the species richness that occurs within a given area within a region
+## that is smaller than the entire distribution of the species (Moore, 2013)
+## You can use the relative abundance or dat.01per data
+adivmeasures <- function(abundance_data) {
+  library(vegan)
+  # Species richness: the number of species within a region
+  S <- as.data.frame(specnumber(abundance_data))
+  colnames(S)[1] ="S"
+  #No. individuals:
+  N <- as.data.frame(rowSums(abundance_data))
+  colnames(N)[1] ="N"
+  #Shannon-Weiner Diversity:
+  ## Shannon index: a measure of the information content of a community rather than of the particular species
+  ##               that is present (Moore, 2013) [species richness index]
+  ## strongly influenced by species richness and by rare species (so sample size is negligible)
+  H <- as.data.frame(diversity(abundance_data), index="shannon")
+  colnames(H)[1] ="H"
+  #Pielou's Evenness:
+  ## Pielou's evenness: an index that measures diversity along with the species richness
+  ## Formula - J = H/log(S) (aka Shannon evenness index)
+  ## evenness = the count of individuals of each species in an area; 0 is no evenness & 1 is complete evenness 
+  J = H/log(S)
+  colnames(J)[1] ="J"
+  #Simpson's Diversity (1/D) (inverse):
+  ## gives the Simpson index the property of increasing as diversity increases (the dominance of
+  ## a few species decreases)
+  inv.D <- as.data.frame(diversity(abundance_data, index="inv"))
+  colnames(inv.D)[1] ="inv.D"
+  #Combine data together into a single new data frame, export as CSV
+  diversitybysample <- cbind(S, N, H, J,inv.D)
+  write.csv(diversitybysample, "AlphaDiversity.csv")
+  return(diversitybysample)
+}
+## This function returns one dataframe that contains the alpha diversity measure metrics for each sample
+
+# Merge diversity with metadata table and export as csv
+# DONE IN EXCEL BEFORE RUNNING NEXT CODE: rename the first column of both data 
+# tables as the SAME NAME. e.g. both should have the sample column labelled as "Sample"
+diversitybysample <- read.csv("AlphaDiversity.csv", row.names = 1)
+met <- read.csv("metadata.csv", row.names = 1)
+adivmet <- cbind(diversitybysample,met)
+write.csv(adivmet,"Metadata-Diversity.csv")

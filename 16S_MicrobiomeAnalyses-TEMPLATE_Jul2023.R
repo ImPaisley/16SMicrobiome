@@ -86,6 +86,94 @@ abund <- calculate_abund("feature.csv") #if you have NO metadata
 # your workspace, simply assign it to its own variable
 # Example saving dat and metadata
 feature <- abund_metadata$dat
-metadta <- abund_metadata$metadata
+metadata <- abund_metadata$metadata
 
 ###### Check for Batch Correction ######
+## make sure you run the abundance function first so you have your abundance
+## tables to input into the following functions (again RUN FUNCTIONS FIRST!)
+
+## Batch correction
+## first, create Bray-Curtis dissimilarity distance matrix
+## you can either use the dat.01per or dat.ra tables as input,
+## they give the same result
+
+ra.bc.dist <- vegdist(dat.ra, method = "bray")
+#OR dat01.bc.dist <- vegdist(dat.ra, method = "bray") is using dat01.per abundance
+
+## next, determine if the batch effect is present and significant
+# NOTE: if checking for the batch effect, you must have a column named
+# "Batch" in your metadata how the batch is defined is dependent on your project. 
+# For example, if you had multiple individuals aid in numerous sequence runs
+# then it will be good to base your "batches" on the sequence run that
+# each sample was a part of.
+
+## function
+batch_test <-function(bray_dist_matrix, metadata){
+  library(vegan)
+  dis.Batch <- betadisper(bray_dist_matrix,metadata$Batch) # betadisper calculates dispersion (variances) within each group 
+  test <- permutest(dis.Batch, pairwise=TRUE, permutations=999) #determines if the variances differ by groups
+  if (test$tab$`Pr(>F)`[1] <= 0.05){    #differences are SIGNIFICANT - use ANOSIM
+    ano_sim <- anosim(ra.bc.dist, metadata$Batch, permutations = 999)
+    return(ano_sim)
+  }
+  else{            #differences are NOT SIGNIFICANT - use PERMANOVA (adonis))
+    p_anova <- adonis2(ra.bc.dist~metadata$Batch, permutations = 999)
+    return(p_anova)
+  }
+}
+
+## insert your input into the function
+# "bray_dist_matrix" = insert the distance matrix you just created 
+# "metadata" = insert your metadata variable (may be already named 'metadata') 
+batch_test(ra.bc.dist, metadata)
+
+## If p <= 0.05, then the batch effect was found to be significant and you MUST
+## correct the batch effect BEFORE moving on to further analyses
+
+## CONTINUE HERE IF YOUR DATA IS SIGNIFICANT FOR BATCH EFFECT!! SKIP IF NOT!
+# Using a package called MMUPHin, we will have to adjust the data so that the 
+# batch effect is no longer affecting the statistical outcome of the data.
+
+batch_correct <- function(feature_csv, metadata_csv) {
+  library(vegan)
+  library(MMUPHin)
+  dat <- t(data.matrix(read.csv(feature_csv, header = TRUE, row.names = 1)))
+  metadata <- read.csv(metadata_csv, header = TRUE, row.names = 1)
+  dat <- as.data.frame(dat)
+  typeof(dat)
+  common.rownames <- intersect(rownames(dat), rownames(metadata))
+  dat <- dat[common.rownames, ]
+  metadata <- metadata[common.rownames, ]
+  #Adjusting (removing) batch effect
+  fit_adjust_batch <- adjust_batch(feature_abd = t(dat), # ASVs should be rows in feature table (MATRIX)
+                                   batch = "Batch",
+                                   data = metadata)   # samples should be rows in metadata (DATAFRAME)
+  feat_abd_adj <- fit_adjust_batch$feature_abd_adj #now adjusted feature table MATRIX
+  feat_abd_adj <- as.data.frame(feat_abd_adj) #converting to data frame
+  write.csv(feat_abd_adj, "feature_ADJUSTED.csv") #saving as csv
+  dfs_to_return <- list(as.data.frame(dat), as.data.frame(metadata),
+                        as.data.frame(feat_abd_adj))
+  names(dfs_to_return) <- c("dat", "metadata", "adj-feature")
+  return(dfs_to_return)
+}
+
+## insert your files into the function
+# "feature.csv" = insert the name of your feature table .csv file
+# "metadata.csv" = insert the name of your metadata .csv file 
+# The adjusted feature table is saved as a csv under your working directory as "feature_ADJUSTED.csv"
+
+batchadj <- batch_correct("feature.csv", "metadata.csv")
+
+# function will return a list of data frames:
+# dat = your original feature table that is transposed (or flipped)
+# metadata = your metadata table             **dat and metadata should have the same samples!**
+# adj-feature = the adjusted feature table that is now batch corrected
+
+# YOU NEED TO USE THE BATCH CORRECTED FEATURE TABLE FOR THE REST OF THE
+# ANALYSES IF YOUR DATA WAS BATCH CORRECTED!!
+
+
+
+
+
+

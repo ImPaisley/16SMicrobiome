@@ -98,7 +98,7 @@ metadata <- abund_metadata$metadata
 ## they give the same result
 
 ra.bc.dist <- vegdist(dat.ra, method = "bray")
-#OR dat01.bc.dist <- vegdist(dat.ra, method = "bray") is using dat01.per abundance
+# OR dat01.bc.dist <- vegdist(dat.ra, method = "bray") is using dat01.per abundance
 
 ## next, determine if the batch effect is present and significant
 # NOTE: if checking for the batch effect, you must have a column named
@@ -108,7 +108,7 @@ ra.bc.dist <- vegdist(dat.ra, method = "bray")
 # each sample was a part of.
 
 ## function
-batch_test <-function(bray_dist_matrix, metadata){
+batch_test <- function(bray_dist_matrix, metadata){
   library(vegan)
   dis.Batch <- betadisper(bray_dist_matrix,metadata$Batch) # betadisper calculates dispersion (variances) within each group 
   test <- permutest(dis.Batch, pairwise=TRUE, permutations=999) #determines if the variances differ by groups

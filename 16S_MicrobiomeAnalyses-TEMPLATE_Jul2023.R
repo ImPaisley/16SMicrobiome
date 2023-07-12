@@ -12,6 +12,16 @@
 setwd() #include the file path to the folder where all your files are stored
 set.seed() #choose any random number
 
+###### List of Packages Used ######
+library(vegan)
+library(phyloseq)
+library(microbiome)
+library(ggplot2)
+library(tidyverse)
+library(pgirmess)
+library(multcompView)
+library(MMUPHin)
+
 ###### Producing Relative Abundance Data ######
 ### NOTE: If you ignore metdata, you will NOT be able to perform statistical
 ###       analyses on your data, only taxonomical analyses.
@@ -347,3 +357,148 @@ diversitybysample <- read.csv("AlphaDiversity.csv", row.names = 1)
 met <- read.csv("metadata.csv", row.names = 1)
 adivmet <- cbind(diversitybysample,met)
 write.csv(adivmet,"Metadata-Diversity.csv")
+
+###### Alpha Diversity Statistics ######
+library(vegan)
+library(ggplot2)
+
+# load in your metadata that has the alpha diversity indices included
+metadata <- read.csv("Metadata-Diversity.csv", header = TRUE, row.names = 1)
+
+#### Testing Statistical Significance
+## Normality - Shapiro Test (only done on NUMERIC data)
+## p <= 0.05 = H0 REJECTED -> DATA IS NOT NORMAL 
+## p > 0.05 = H0 ACCEPTED -> DATA IS NORMAL
+
+## If data is NOT normal the first time, try transforming the data using log
+## and sqrt and retest for normality.
+
+#Alpha Diversity Variables - Test for Normality
+shapiro.test(metadata$S)
+shapiro.test(metadata$N)
+shapiro.test(metadata$H)
+shapiro.test(metadata$J)
+shapiro.test(metadata$inv.D)
+
+### CONTINUE HERE IF DATA IS NORMAL (OR TRANSFORMATIONS NORMALIZED THE DATA)
+# ANOVA: Parametric Data (normal)
+# Tukey Test - calculate pairwise comparisons between group levels
+
+# RUN FUNCTION FIRST!!
+p_anova <- function(adiv_var, test_var) {
+  library(pgirmess)
+  library(multcompView)
+  anova_res <- aov(adiv_var ~ test_var) # performs an ANOVA 
+  summary <- summary(anova_res) # provides an ANOVA table with p-values
+  Tukey <- TukeyHSD(anova_res) # pairwise comparison
+  return_items <- list(summary, Tukey)
+  names(return_items) <- c("ANOVA summary", "TukeyTest")
+  return(return_items)
+}
+## insert your files into the function
+# "adiv_var" = insert the alpha diversity metric you want to test from the metadata file
+#              (metadata$S, metadata$N, metadata$J, metadata$H, or metadata$inv.D)
+# "test_var" = insert the variable(s) you want to test against the alpha diversity
+#              metric (e.g. year (metadata$year), month, year and month (metadata$year+month), etc.)
+#         ** MAKE SURE YOUR VARIABLE IS A FACTOR! IF NOT THEN SURROUND IT WITH as.factor() **
+p_anova(adiv_var, test_var) # or p_anova(adiv_var, as.factor(test_var))
+
+# Example inputs:
+S_anova <- p_anova(metadata$S, as.factor(metadata$Year))
+N_anova <- p_anova(metadata$N, metadata$Year)
+J_anova <- p_anova(metadata$J, metadata$Year)
+H_anova <- p_anova(metadata$H, metadata$Year)
+inv.D_anova <- p_anova(metadata$inv.D, metadata$Year)
+
+### CONTINUE HERE IF DATA IS NOT NORMAL AND TRANSFORMATIONS DID NOT WORK
+library(pgirmess)
+library(multcompView)
+
+# Kruskal Wallis: Nonparametric Data (not normal)
+# Pairwise Wilcox Test - calculate pairwise comparisons between group levels 
+#                        with corrections for multiple testing (non-parametric)
+
+# RUN FUNCTION FIRST!!
+nonp_kruskal <- function(adiv_var, test_var) {
+  library(pgirmess)
+  library(multcompView)
+  kruskal.test(adiv_var ~ test_var)
+  pair_WilTest <- pairwise.wilcox.test(adiv_var, test_var, p.adjust.method = "fdr") #pairwise comparisons between the variable levels
+  kmc <- kruskalmc(adiv_var ~ test_var) # multiple-comparison test
+  # comparisons TRUE= significantly different or FALSE= not significantly different
+  # To look for homogeneous groups, and give each group a code (letter):
+  test <- kmc$dif.com$stat.signif # select logical vector
+  names(test) <- row.names(kmc$dif.com)# add comparison names
+  # create a list with "homogeneous groups" coded by letter
+  let <- multcompLetters(test, compare="<", threshold=0.05,
+                         Letters=c(letters, LETTERS, "."),reversed = FALSE)
+  # significant letters for the multiple comparison test
+  # if the letter are the SAME, then no significant differences were found
+  # between those variables
+  returned_items <- list(pair_WilTest,kmc,let)
+  names(returned_items) <- c("pairwise", "multiComp","letter-comparisons")
+  return(returned_items)
+}
+## insert your files into the function
+# "adiv_var" = insert the alpha diversity metric you want to test from the metadata file
+#              (metadata$S, metadata$N, metadata$J, metadata$H, or metadata$inv.D)
+# "test_var" = insert the variable(s) you want to test against the alpha diversity
+#              metric (e.g. year (metadata$year), month, year and month (metadata$year+month), etc.)
+#         ** MAKE SURE YOUR VARIABLE IS A FACTOR! IF NOT THEN SURROUND IT WITH as.factor() **
+nonp_kruskal(adiv_var, test_var) # or nonp_kruskal(adiv_var, as.factor(test_var))
+
+# Example inputs:
+S_krusk <- nonp_kruskal(metadata$S, metadata$Year)
+N_krusk <- nonp_kruskal(metadata$N, metadata$Year)
+J_krusk <- nonp_kruskal(metadata$J, metadata$Year)
+H_krusk <- nonp_kruskal(metadata$H, metadata$Year)
+inv.D_krusk <- nonp_kruskal(metadata$inv.D, metadata$Year)
+
+### Plotting boxplots of alpha diversity by specified variable
+## NOTES: You can replace "Year" with your specified variable
+##        Adding text to your graph is OPTIONAL but if you are adding it then
+##        you'll have to play around with their coordinates, what they say, size, and color
+
+# Creating pdf for the plots to populate
+pdf("AlphaDiverisityPlots.pdf")
+# plot each boxplot on its own page
+par(mar=c(5,6,2,2)+0.1)
+boxplot(S~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
+title(xlab="Year", line = 3, cex.lab=1.15)
+title(ylab="Species Richness (S)", line=4.25, cex.lab=1.15)
+text(y=1500, x=3, labels="b", col="blue", cex=1.2)
+text(y=1420, x=2, labels="a", col="red", cex=1.2)        # labeling which groups are significantly different than the other 
+text(y=1585, x=1, labels="a", col="red", cex=1.2)
+
+par(mar=c(5,4.5,2,2)+0.1)
+boxplot(H~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
+title(xlab="Year", line = 3, cex.lab=1.15)
+title(ylab="Shannon Diversity Index (H)", line=2.8, cex.lab=1.15)
+text(y=4, x=3, labels="b", col="blue", cex=1.2)
+text(y=3.4, x=2, labels="a", col="red", cex=1.2)        
+text(y=3.6, x=1, labels="ab", col="purple", cex=1.2)
+
+boxplot(J~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
+title(xlab="Year", line = 3, cex.lab=1.15)
+title(ylab="Species Evenness (J)", line=3, cex.lab=1.15)
+text(y=0.73, x=3, labels="b", col="blue", cex=1.2)
+text(y=0.685, x=2, labels="ab", col="purple", cex=1.2)        
+text(y=0.73, x=1, labels="a", col="red", cex=1.2)
+
+par(mar=c(5,6,2,2)+0.1)
+boxplot(inv.D~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
+title(xlab="Year", line = 3, cex.lab=1.15)
+title(ylab="inverse Simpson Diversity Index (inv.D)", line=3.6, cex.lab=1.15)
+text(y=440, x=3, labels="a", col="red", cex=1.2)
+text(y=420, x=2, labels="b", col="blue", cex=1.2)        
+text(y=340, x=1, labels="a", col="red", cex=1.2)
+
+boxplot(N~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
+title(xlab="Year", line = 3, cex.lab=1.15)
+title(ylab="No. of Individuals (N)", line=4.25, cex.lab=1.15)
+text(y=90000, x=3, labels="b", col="blue", cex=1.2)
+text(y=130000, x=2, labels="a", col="red", cex=1.2)        
+text(y=160000, x=1, labels="a", col="red", cex=1.2)
+
+# stop saving to pdf 
+dev.off()

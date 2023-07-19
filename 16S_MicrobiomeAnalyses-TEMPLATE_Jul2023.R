@@ -239,9 +239,9 @@ abline(v = inflection, col="black", lwd=1.4) # creates the inflection line at sp
 ###       analyses on your data, only taxonomic analyses.
 
 ## RUN FUNCTIONS FIRST!
-# use "calculate_abund.metadta" if you have your metadata file
+# use "calculate_abund.metadata" if you have your metadata file
 # use "calculate_abund" if ignoring metadata (NO metadata file)
-calculate_abund.metadata <- function(feature_csv,metadata_csv){
+calculate_abund.metadata_ADJ <- function(feature_csv,metadata_csv){
   library(vegan)
   dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1))) 
   #transposed so that the row names are now the sample names and the ASVs are the columns
@@ -272,7 +272,7 @@ calculate_abund.metadata <- function(feature_csv,metadata_csv){
   names(dfs_to_return) <- c("dat", "metadata","dat.dom","dat.pa","dat.01per","dat.001per","dat.ra")
   return(dfs_to_return)
 }
-calculate_abund <- function(feature_csv){
+calculate_abund_ADJ <- function(feature_csv){
   library(vegan)
   dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1))) 
   #transposed so that the row names are now the sample names and the ASVs are the columns
@@ -300,8 +300,8 @@ calculate_abund <- function(feature_csv){
 # "feature.csv" = insert the name of your ADJUSTED feature table .csv file
 # "metadata.csv" = insert the name of your metadata .csv file 
 
-abund_metadata <- calculate_abund.metadata("feature_ADJUSTED.csv","metadata.csv") #if you have metadata
-abund <- calculate_abund("feature_ADJUSTED.csv") #if you have NO metadata
+abund_metadata <- calculate_abund.metadata_ADJ("feature_ADJUSTED.csv","metadata.csv") #if you have metadata
+abund <- calculate_abund_ADJ("feature_ADJUSTED.csv") #if you have NO metadata
 
 # functions will return a list of data frames (must assign to a variable in order to access them):
 # dat = your original adjusted feature table that is transposed (or flipped)

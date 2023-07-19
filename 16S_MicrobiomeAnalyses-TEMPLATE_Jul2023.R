@@ -114,39 +114,34 @@ metadta <- abund_metadata$metadata
 ## tables to input into the following functions (again RUN FUNCTIONS FIRST!)
 
 ## Batch correction
-## first, create Bray-Curtis dissimilarity distance matrix
-## you can either use the dat.01per or dat.ra tables as input,
-## they give the same result
 
-ra.bc.dist <- vegdist(dat.ra, method = "bray")
-#OR dat01.bc.dist <- vegdist(dat.01per, method = "bray") if using dat01.per abundance
-
-## next, determine if the batch effect is present and significant
+## Determine if the batch effect is present and significant
 # NOTE: if checking for the batch effect, you must have a column named
-# "Batch" in your metadata how the batch is defined is dependent on your project. 
+# "Batch" in your metadata how the batch is defined is dependent on your project.
 # For example, if you had multiple individuals aid in numerous sequence runs
 # then it will be good to base your "batches" on the sequence run that
 # each sample was a part of.
 
 ## function
-batch_test <-function(bray_dist_matrix, metadata){
+batch_test <-function(abundance_data, metadata){
   library(vegan)
-  dis.Batch <- betadisper(bray_dist_matrix,metadata$Batch) # betadisper calculates dispersion (variances) within each group 
+  bc.dist <- vegdist(abundance_data, method = "bray") # creates distance matrix; you can either use the dat.01per or dat.ra tables as input
+  dis.Batch <- betadisper(bc.dist,metadata$Batch) # betadisper calculates dispersion (variances) within each group
   test <- permutest(dis.Batch, pairwise=TRUE, permutations=999) #determines if the variances differ by groups
   if (test$tab$`Pr(>F)`[1] <= 0.05){    #differences are SIGNIFICANT - use ANOSIM
-    ano_sim <- anosim(bray_dist_matrix, metadata$Batch, permutations = 999)
+    ano_sim <- anosim(bc.dist, metadata$Batch, permutations = 999)
     return(ano_sim)
   }
   else{            #differences are NOT SIGNIFICANT - use PERMANOVA (adonis))
-    p_anova <- adonis2(bray_dist_matrix~metadata$Batch, permutations = 999)
+    p_anova <- adonis2(bc.dist~metadata$Batch, permutations = 999)
     return(p_anova)
   }
 }
 
 ## insert your input into the function
-# "bray_dist_matrix" = insert the distance matrix you just created 
-# "metadata" = insert your metadata variable (may be already named 'metadata') 
-batch_test(ra.bc.dist, metadata)
+# "abundance" = insert the abundance table you just created (dat.ra, dat.01per, etc.)
+# "metadata" = insert your metadata variable (may be already named 'metadata')
+batch_test(abundance, metadata)
 
 ## If p <= 0.05, then the batch effect was found to be significant and you MUST
 ## correct the batch effect BEFORE moving on to further analyses

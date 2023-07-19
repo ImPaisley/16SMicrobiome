@@ -445,7 +445,7 @@ topTaxplot <- topTaxplot +
   theme(legend.title = element_text(face="italic"))
 topTaxplot # populates the graph into the "plot" panel to the right
 
-###### Alpha Diversity - Measures ###### 
+###### Alpha Diversity - Measures ######
 ## Alpha diversity: the species richness that occurs within a given area within a region
 ## that is smaller than the entire distribution of the species (Moore, 2013)
 ## You can use the relative abundance or dat.01per data
@@ -630,33 +630,31 @@ text(y=160000, x=1, labels="a", col="red", cex=1.2)
 
 # stop saving to pdf 
 dev.off()
-###### Beta Diversity - Creating Distance Matrix ######
-library(vegan)
-bc.dist <- vegdist(dat.ra, method = "bray") # you can use either dat.ra or dat.01per to produce the distance matrix
 ###### Beta Diversity - Statistics ######
 # RUN FUNCTION FIRST!!
-betadiv_stats <-function(bray_dist_matrix, metadata){
+betadiv_stats <-function(abundance_data, metadata){
   library(vegan)
-  dis.Variable <- betadisper(bray_dist_matrix,metadata) # betadisper calculates dispersion (variances) within each group 
+  bc.dist <- vegdist(abundance_data, method = "bray") # you can use either dat.ra or dat.01per to produce the distance matrix
+  dis.Variable <- betadisper(bc.dist,metadata) # betadisper calculates dispersion (variances) within each group
   test <- permutest(dis.Variable, pairwise=TRUE, permutations=999) #determines if the variances differ by groups
   if (test$tab$`Pr(>F)`[1] <= 0.05){    #differences are SIGNIFICANT - use ANOSIM
-    ano_sim <- anosim(bray_dist_matrix, metadata, permutations = 999)
-    return(ano_sim)
+    ano_sim <- anosim(bc.dist, metadata, permutations = 999)
+    return(list(c(bc.dist,ano_sim)))
   }
   else{            #differences are NOT SIGNIFICANT - use PERMANOVA (adonis))
-    p_anova <- adonis2(bray_dist_matrix~metadata, permutations = 999)
-    return(p_anova)
+    p_anova <- adonis2(bc.dist~metadata, permutations = 999)
+    return(list(c(bc.dist,p_anova)))
   }
 }
 ## insert your input into the function
-# "bray_dist_matrix" = insert the distance matrix you created 
-# "metadata$Variable" = insert your metadata variable with the Variable you want to test (may be already named 'metadata') 
-betadiv_stats(bc.dist,metadata$Variable)
+# "abundance_data" = insert the distance matrix you created
+# "metadata$Variable" = insert your metadata variable with the Variable you want to test (may be already named 'metadata')
+betadiv <- betadiv_stats(abundance_data,metadata$Variable)
 
 ###### Beta Diversity - nMDS plots ######
 library(vegan)
 # Creating nMDS plot - 2D
-nmds2d <- metaMDS(bc.dist,k=2,autotransform = F,trymax=20)
+nmds2d <- metaMDS(bc.dist,k=2,autotransform = F,trymax=20) # you will have to extract bc.dist from the previous analysis (object betadiv)
 nmds2d
 #Dimensions = 2
 #Stress = 

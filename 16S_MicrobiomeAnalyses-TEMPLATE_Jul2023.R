@@ -25,8 +25,14 @@ library(tidyverse)
 library(vegan)
 
 ###### Set Working Directory and Seed - ALWAYS RUN THIS FIRST! ######
-setwd() #include the file path to the folder where all your files are stored 
-set.seed() #choose any random number
+setwd_seed <- function(file_path,seed_number) {
+  setwd(file_path) #include the file path to the folder where all your files are stored
+  set.seed(seed_number) #choose any random number
+}
+## insert your files into the function
+# "file_path" = insert the file path of your desired folder
+# seed_number = insert a random number
+setwd_seed("file_path", seed_number)
 
 ###### Producing Relative Abundance Data ######
 ### NOTE: If you ignore metadata, you will NOT be able to perform statistical

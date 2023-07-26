@@ -11,7 +11,7 @@
 ###### List of Packages Used ######
 ## Here is a list of all the packages used throughout this R script.
 ## Take the necessary steps to install any packages that you do not have
-## installed already on your computer (may have to use install.packages() 
+## installed already on your computer (may have to use install.packages()
 ## or Bioconductor depending on the package)
 
 library(ggplot2)
@@ -43,7 +43,7 @@ setwd_seed("file_path", seed_number)
 # use "calculate_abund" if ignoring metadata (NO metadata file)
 calculate_abund.metadata <- function(feature_csv,metadata_csv){
   library(vegan)
-  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1))) 
+  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1)))
   #transposed so that the row names are now the sample names and the ASVs are the columns
   #BUT it is still a MATRIX
   metadata <- read.csv(metadata_csv, header = TRUE, row.names = 1)
@@ -58,7 +58,7 @@ calculate_abund.metadata <- function(feature_csv,metadata_csv){
   dat.otus.01per<-which(colSums(dat.pa) > (0.01*nrow(dat.pa)))
   dat.01per<-dat.dom[,dat.otus.01per] #removed ASVs that occur less than 0.1%
   dat.otus.001per<-which(colSums(dat.pa) > (0.001*nrow(dat.pa)))
-  dat.001per<-dat.dom[,dat.otus.001per] #removed ASVs that occur less than 0.01%; increases the number of ASVs - includes more "microdiversity" 
+  dat.001per<-dat.dom[,dat.otus.001per] #removed ASVs that occur less than 0.01%; increases the number of ASVs - includes more "microdiversity"
   dat.ra<-decostand(dat.01per, method = "total") #relative abundance of >1% taxa
   dfs_to_return <- list(as.data.frame(dat),as.data.frame(metadata),
                         as.data.frame(dat.dom),as.data.frame(dat.pa),
@@ -69,7 +69,7 @@ calculate_abund.metadata <- function(feature_csv,metadata_csv){
 }
 calculate_abund <- function(feature_csv){
   library(vegan)
-  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1))) 
+  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1)))
   #transposed so that the row names are now the sample names and the ASVs are the columns
   dat <- as.data.frame(dat)
   otu.abund<-which(colSums(dat)>2) #removes singletons and doubletons
@@ -78,7 +78,7 @@ calculate_abund <- function(feature_csv){
   dat.otus.01per<-which(colSums(dat.pa) > (0.01*nrow(dat.pa)))
   dat.01per<-dat.dom[,dat.otus.01per] #removed ASVs that occur less than 0.1%
   dat.otus.001per<-which(colSums(dat.pa) > (0.001*nrow(dat.pa)))
-  dat.001per<-dat.dom[,dat.otus.001per] #removed ASVs that occur less than 0.01%; increases the number of ASVs - includes more "microdiversity" 
+  dat.001per<-dat.dom[,dat.otus.001per] #removed ASVs that occur less than 0.01%; increases the number of ASVs - includes more "microdiversity"
   dat.ra<-decostand(dat.01per, method = "total") #relative abundance of >1% taxa
   dfs_to_return <- list(as.data.frame(dat),as.data.frame(dat.dom),as.data.frame(dat.pa),
                         as.data.frame(dat.01per),as.data.frame(dat.001per),
@@ -89,7 +89,7 @@ calculate_abund <- function(feature_csv){
 
 ## insert your files into the function
 # "feature.csv" = insert the name of your feature table .csv file
-# "metadata.csv" = insert the name of your metadata .csv file 
+# "metadata.csv" = insert the name of your metadata .csv file
 
 abund_metadata <- calculate_abund.metadata("feature.csv","metadata.csv") #if you have metadata
 abund <- calculate_abund("feature.csv") #if you have NO metadata
@@ -103,7 +103,7 @@ abund <- calculate_abund("feature.csv") #if you have NO metadata
 # dat.001per = ASVs from dat that have an abundance of 0.01% or higher
 # dat.ra = ASVs from dat.01per normalized into relative abundance
 
-# To save any dataframe (df) within the function result list as a single df in 
+# To save any dataframe (df) within the function result list as a single df in
 # your workspace, simply assign it to its own variable
 # Example saving dat and metadata
 feature <- abund_metadata$dat
@@ -147,7 +147,7 @@ batch_test(abundance, metadata)
 ## correct the batch effect BEFORE moving on to further analyses
 
 ## CONTINUE HERE IF YOUR DATA IS SIGNIFICANT FOR BATCH EFFECT!! SKIP IF NOT!
-# Using a package called MMUPHin, we will have to adjust the data so that the 
+# Using a package called MMUPHin, we will have to adjust the data so that the
 # batch effect is no longer affecting the statistical outcome of the data.
 
 batch_correct <- function(feature_csv,metadata_csv){
@@ -162,7 +162,7 @@ batch_correct <- function(feature_csv,metadata_csv){
   metadata <- metadata[common.rownames,]
   #Adjusting (removing) batch effect
   fit_adjust_batch <- adjust_batch(feature_abd = t(dat), # ASVs should be rows in feature table (MATRIX)
-                                   batch = "Batch", 
+                                   batch = "Batch",
                                    data = metadata)   # samples should be rows in metadata (DATAFRAME)
   feat_abd_adj <- fit_adjust_batch$feature_abd_adj #now adjusted feature table MATRIX
   feat_abd_adj <- as.data.frame(feat_abd_adj) #converting to data frame
@@ -175,7 +175,7 @@ batch_correct <- function(feature_csv,metadata_csv){
 
 ## insert your files into the function
 # "feature.csv" = insert the name of your feature table .csv file
-# "metadata.csv" = insert the name of your metadata .csv file 
+# "metadata.csv" = insert the name of your metadata .csv file
 # The adjusted feature table is saved as a csv under your working directory as "feature_ADJUSTED.csv"
 
 batchadj <- batch_correct("feature.csv","metadata.csv")
@@ -183,29 +183,29 @@ batchadj <- batch_correct("feature.csv","metadata.csv")
 # function will return a list of data frames:
 # dat = your original feature table that is transposed (or flipped)
 # metadata = your metadata table             **dat and metadata should have the same samples!**
-# adj-feature = the adjusted feature table that is now batch corrected 
+# adj-feature = the adjusted feature table that is now batch corrected
 
-# YOU NEED TO USE THE BATCH CORRECTED FEATURE TABLE FOR THE REST OF THE 
+# YOU NEED TO USE THE BATCH CORRECTED FEATURE TABLE FOR THE REST OF THE
 # ANALYSES IF YOUR DATA WAS BATCH CORRECTED!!
 
 ###### Generating Rarefaction Curve #######
 library(vegan)
 ## assigning the batch corrected feature table to its own variable; MAKE SURE TO READ ROWNAMES
-rardat<-read.csv("feature_ADJUSTED.csv", header=TRUE, row.names=1, sep=',') 
+rardat<-read.csv("feature_ADJUSTED.csv", header=TRUE, row.names=1, sep=',')
 
 # samples are in columns and need to be in the rows so we need to flip or transpose the file
 # transpose the data to rows; transposing changes the data frame to a matrix!
 trans.rardat <- t(rardat)
-# check file to make sure it worked 
+# check file to make sure it worked
 trans.rardat[1:5,1:5] #shows rows 1 through 5 and the samples should now be the rows
 # assign the transformed data matrix into main data variable
 rardat <- trans.rardat
 # change back into data frame instead of matrix
 rardat <-as.data.frame(rardat)
-#check data file to make sure it looks okay 
+#check data file to make sure it looks okay
 View(rardat)
 
-rowSums(rardat) #sums the value of each row in the data frame; 
+rowSums(rardat) #sums the value of each row in the data frame;
 # this shows the total sequencing reads for each sample
 
 ## Creating the rarefaction curve
@@ -223,11 +223,11 @@ grp <- factor(sample(seq_along(col), nrow(rardat), replace = TRUE))
 cols <- col[grp]
 
 # creating rarefaction curve
-# create the curve to estimate where the inflection point (the point at which 
+# create the curve to estimate where the inflection point (the point at which
 # most of the lines being to plateau) lies, then assign that value to the
 # variable "inflection" below
-rarecurve(rardat, step = 500, sample=raremax, col = cols, label = TRUE, 
-          main="Title", cex= 0.35, cex.axis= 0.95, cex.lab= 1, xlim=c(0,200000), 
+rarecurve(rardat, step = 500, sample=raremax, col = cols, label = TRUE,
+          main="Title", cex= 0.35, cex.axis= 0.95, cex.lab= 1, xlim=c(0,200000),
           xlab = "# of Sequencing Reads", ylab = "# of ASVs")
 inflection <- 10000 # insert your estimated inflection point value
 abline(0,0) # creates a vertical line at 0,0
@@ -243,7 +243,7 @@ abline(v = inflection, col="black", lwd=1.4) # creates the inflection line at sp
 # use "calculate_abund" if ignoring metadata (NO metadata file)
 calculate_abund.metadata_ADJ <- function(feature_csv,metadata_csv){
   library(vegan)
-  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1))) 
+  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1)))
   #transposed so that the row names are now the sample names and the ASVs are the columns
   #BUT it is still a MATRIX
   metadata <- read.csv(metadata_csv, header = TRUE, row.names = 1)
@@ -274,7 +274,7 @@ calculate_abund.metadata_ADJ <- function(feature_csv,metadata_csv){
 }
 calculate_abund_ADJ <- function(feature_csv){
   library(vegan)
-  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1))) 
+  dat<-t(data.matrix(read.csv(feature_csv, header=TRUE, row.names = 1)))
   #transposed so that the row names are now the sample names and the ASVs are the columns
   dat <- as.data.frame(dat)
   write.csv(dat, "feature_ADJUSTED-Transposed.csv")
@@ -298,7 +298,7 @@ calculate_abund_ADJ <- function(feature_csv){
 
 ## insert your files into the function
 # "feature.csv" = insert the name of your ADJUSTED feature table .csv file
-# "metadata.csv" = insert the name of your metadata .csv file 
+# "metadata.csv" = insert the name of your metadata .csv file
 
 abund_metadata <- calculate_abund.metadata_ADJ("feature_ADJUSTED.csv","metadata.csv") #if you have metadata
 abund <- calculate_abund_ADJ("feature_ADJUSTED.csv") #if you have NO metadata
@@ -314,7 +314,7 @@ abund <- calculate_abund_ADJ("feature_ADJUSTED.csv") #if you have NO metadata
 
 ## NOTE: The dat, dat.01per, dat.001per, and dat.ra tables are saved as csvs into your working directory
 
-# To save any dataframe (df) within the function result list as a single df in 
+# To save any dataframe (df) within the function result list as a single df in
 # your workspace, simply assign it to its own variable
 # Example saving dat and metadata
 feature <- abund_metadata$dat
@@ -347,6 +347,7 @@ create_phyloseq <- function(abund, taxonomy, metadata) {
 # "metadata.csv" = insert your metadata .csv file
 physeq_transform <- create_phyloseq(abundance, "taxonomy.csv", "metadata.csv")
 
+
 ## Basic sequencing statistics
 # Check number of sequencing reads observed in each sample
 sample_sums(physeq)
@@ -372,16 +373,16 @@ ntaxa(physeq)
 ## Retrieves the unique taxonomic ranks observed in the data set
 ## [#] = rank (starting from Domain and onward DPCOFGS)
 get_taxa_unique(physeq, taxonomic.rank=rank_names(physeq)[7], errorIfNULL=TRUE)
-#Unique Domains = 
-#Unique Phyla = 
-#Unique Classes = 
-#Unique Orders = 
-#Unique Families = 
-#Unique Genera = 
-#Unique Species = 
+#Unique Domains =
+#Unique Phyla =
+#Unique Classes =
+#Unique Orders =
+#Unique Families =
+#Unique Genera =
+#Unique Species =
 
 ## Aggregating by Taxonomic level
-# This function allows you to aggregate the taxonomy based on Taxonomic 
+# This function allows you to aggregate the taxonomy based on Taxonomic
 # level, gives you the counts of each level, and saves as a CSV file
 
 # RUN FUNCTION FIRST!!
@@ -399,9 +400,10 @@ agg.tax.level <- taxon_aggregate(phyloseq_object,"tax_level")
 # For example for Class, the code would read:
 # Class <- taxon_aggregate(physeq_transform,"Class")
 
-## Calculating the top taxonomic levels 
+
+## Calculating the top taxonomic levels
 # First, find the top taxa names and abundances
-# This function allows you to specify the top taxonomy of your data and 
+# This function allows you to specify the top taxonomy of your data and
 # exports the resulting vector as a csv file
 
 # RUN FUNCTION FIRST!!
@@ -409,7 +411,7 @@ top_taxa <- function(phyloseq_object, tax_level, n){
   top_taxanames <- sort(tapply(taxa_sums(phyloseq_object), tax_table(phyloseq_object)[, tax_level], sum), TRUE)[1:n]
   top_names <- as.data.frame(top_taxanames)
   colnames(top_names) <- paste(tax_level, "Abundance", sep=".")
-  write.csv(top_names, paste("Top",as.character(n),tax_level, ".csv", sep="")) # exports the table as a csv file 
+  write.csv(top_names, paste("Top",as.character(n),tax_level, ".csv", sep="")) # exports the table as a csv file
   return(top_taxanames)
 }
 ## insert your input into the function
@@ -420,6 +422,7 @@ top.n.names <- top_taxa(phyloseq_object, "tax_level", n)
 # For example for top 5 Classes, the code would read:
 # top.class.names <- top_taxa(physeq_transform,"Class",5)
 
+
 # Next, subset your phyloseq object to only include the top taxa you just specified
 # cuts down the phyloseq object to only the top n
 # Replace the "taxonomic level" with the level you want WITHOUT QUOTES!
@@ -428,10 +431,10 @@ top_tax <- subset_taxa(physeq_transform, "taxonomic level" %in% names(top.n.name
 # top_Class <- subset_taxa(physeq_transform, Class %in% names(top.class.names))
 
 ## Creating stacked bar plots from your phyloseq object subset
-# Change any taxonomic names to the level that you need 
+# Change any taxonomic names to the level that you need
 library(ggplot2)
 topTaxplot <- plot_bar(top_tax, x="Sample", y="Abundance", fill="Class")
-topTaxplot <- topTaxplot + 
+topTaxplot <- topTaxplot +
   geom_bar(aes(fill=Class, colour=Class), stat="identity", position="fill", width = 0.9) +   #width=0.96 removes any space between bars
   ggtitle("Top 5 Classes") +
   theme_light() +
@@ -461,7 +464,7 @@ adivmeasures <- function(abundance_data) {
   #Pielou's Evenness:
   ## Pielou's evenness: an index that measures diversity along with the species richness
   ## Formula - J = H/log(S) (aka Shannon evenness index)
-  ## evenness = the count of individuals of each species in an area; 0 is no evenness & 1 is complete evenness 
+  ## evenness = the count of individuals of each species in an area; 0 is no evenness & 1 is complete evenness
   J = H/log(S)
   colnames(J)[1] ="J"
   #Simpson's Diversity (1/D) (inverse):
@@ -476,8 +479,9 @@ adivmeasures <- function(abundance_data) {
 }
 ## This function returns one dataframe that contains the alpha diversity measure metrics for each sample
 
+
 # Merge diversity with metadata table and export as csv
-# DONE IN EXCEL BEFORE RUNNING NEXT CODE: rename the first column of both data 
+# DONE IN EXCEL BEFORE RUNNING NEXT CODE: rename the first column of both data
 # tables as the SAME NAME. e.g. both should have the sample column labelled as "Sample"
 diversitybysample <- read.csv("AlphaDiversity.csv", row.names = 1)
 met <- read.csv("metadata.csv", row.names = 1)
@@ -485,12 +489,13 @@ adivmet <- cbind(diversitybysample,met)
 write.csv(adivmet,"Metadata-Diversity.csv")
 ###### Alpha Diversity Statistics ######
 library(vegan)
+
 # load in your metadata that has the alpha diversity indices included
 metadata <- read.csv("Metadata-Diversity.csv", header = TRUE, row.names = 1)
 
 #### Testing Statistical Significance
 ## Normality - Shapiro Test (only done on NUMERIC data)
-## p <= 0.05 = H0 REJECTED -> DATA IS NOT NORMAL 
+## p <= 0.05 = H0 REJECTED -> DATA IS NOT NORMAL
 ## p > 0.05 = H0 ACCEPTED -> DATA IS NORMAL
 
 ## If data is NOT normal the first time, try transforming the data using log
@@ -511,7 +516,7 @@ shapiro.test(metadata$inv.D)
 p_anova <- function(adiv_var, test_var) {
   library(pgirmess)
   library(multcompView)
-  anova_res <- aov(adiv_var ~ test_var) # performs an ANOVA 
+  anova_res <- aov(adiv_var ~ test_var) # performs an ANOVA
   summary <- summary(anova_res) # provides an ANOVA table with p-values
   Tukey <- TukeyHSD(anova_res) # pairwise comparison
   return_items <- list(summary, Tukey)
@@ -538,7 +543,7 @@ library(pgirmess)
 library(multcompView)
 
 # Kruskal Wallis: Nonparametric Data (not normal)
-# Pairwise Wilcox Test - calculate pairwise comparisons between group levels 
+# Pairwise Wilcox Test - calculate pairwise comparisons between group levels
 #                        with corrections for multiple testing (non-parametric)
 
 # RUN FUNCTION FIRST!!
@@ -577,6 +582,7 @@ J_krusk <- nonp_kruskal(metadata$J, metadata$Year)
 H_krusk <- nonp_kruskal(metadata$H, metadata$Year)
 inv.D_krusk <- nonp_kruskal(metadata$inv.D, metadata$Year)
 
+
 ### Plotting boxplots of alpha diversity by specified variable
 ## NOTES: You can replace "Year" with your specified variable
 ##        Adding text to your graph is OPTIONAL but if you are adding it then
@@ -590,7 +596,7 @@ boxplot(S~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
 title(xlab="Year", line = 3, cex.lab=1.15)
 title(ylab="Species Richness (S)", line=4.25, cex.lab=1.15)
 text(y=1500, x=3, labels="b", col="blue", cex=1.2)
-text(y=1420, x=2, labels="a", col="red", cex=1.2)        # labeling which groups are significantly different than the other 
+text(y=1420, x=2, labels="a", col="red", cex=1.2)        # labeling which groups are significantly different than the other
 text(y=1585, x=1, labels="a", col="red", cex=1.2)
 
 par(mar=c(5,4.5,2,2)+0.1)
@@ -598,14 +604,14 @@ boxplot(H~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
 title(xlab="Year", line = 3, cex.lab=1.15)
 title(ylab="Shannon Diversity Index (H)", line=2.8, cex.lab=1.15)
 text(y=4, x=3, labels="b", col="blue", cex=1.2)
-text(y=3.4, x=2, labels="a", col="red", cex=1.2)        
+text(y=3.4, x=2, labels="a", col="red", cex=1.2)
 text(y=3.6, x=1, labels="ab", col="purple", cex=1.2)
 
 boxplot(J~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
 title(xlab="Year", line = 3, cex.lab=1.15)
 title(ylab="Species Evenness (J)", line=3, cex.lab=1.15)
 text(y=0.73, x=3, labels="b", col="blue", cex=1.2)
-text(y=0.685, x=2, labels="ab", col="purple", cex=1.2)        
+text(y=0.685, x=2, labels="ab", col="purple", cex=1.2)
 text(y=0.73, x=1, labels="a", col="red", cex=1.2)
 
 par(mar=c(5,6,2,2)+0.1)
@@ -613,18 +619,19 @@ boxplot(inv.D~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
 title(xlab="Year", line = 3, cex.lab=1.15)
 title(ylab="inverse Simpson Diversity Index (inv.D)", line=3.6, cex.lab=1.15)
 text(y=440, x=3, labels="a", col="red", cex=1.2)
-text(y=420, x=2, labels="b", col="blue", cex=1.2)        
+text(y=420, x=2, labels="b", col="blue", cex=1.2)
 text(y=340, x=1, labels="a", col="red", cex=1.2)
 
 boxplot(N~Year, data=metadata, horizontal = F, las=1, ylab = "", xlab = "")
 title(xlab="Year", line = 3, cex.lab=1.15)
 title(ylab="No. of Individuals (N)", line=4.25, cex.lab=1.15)
 text(y=90000, x=3, labels="b", col="blue", cex=1.2)
-text(y=130000, x=2, labels="a", col="red", cex=1.2)        
+text(y=130000, x=2, labels="a", col="red", cex=1.2)
 text(y=160000, x=1, labels="a", col="red", cex=1.2)
 
-# stop saving to pdf 
+# stop saving to pdf
 dev.off()
+
 ###### Beta Diversity - Statistics ######
 # RUN FUNCTION FIRST!!
 betadiv_stats <-function(abundance_data, metadata){
@@ -642,7 +649,7 @@ betadiv_stats <-function(abundance_data, metadata){
   }
 }
 ## insert your input into the function
-# "abundance_data" = insert the distance matrix you created
+# "abundance_data" = insert the abundance data frame you created
 # "metadata$Variable" = insert your metadata variable with the Variable you want to test (may be already named 'metadata')
 betadiv <- betadiv_stats(abundance_data,metadata$Variable)
 
@@ -652,29 +659,29 @@ library(vegan)
 nmds2d <- metaMDS(bc.dist,k=2,autotransform = F,trymax=20) # you will have to extract bc.dist from the previous analysis (object betadiv)
 nmds2d
 #Dimensions = 2
-#Stress = 
+#Stress =
 stressplot(nmds2d)
-#Shepard plot shows scatter around the regression between the inter-point 
-#distances in the final configuration (i.e., the distances between each pair of communities) 
+#Shepard plot shows scatter around the regression between the inter-point
+#distances in the final configuration (i.e., the distances between each pair of communities)
 #against their original dissimilarities
 nmds.plot <- ordiplot(nmds2d,display="sites") #populates the plot into a variable
 ## Adding ellipses to group years
 ordihull(nmds.plot,groups=metadata$Variable,draw="lines",col=c("tomato3","steelblue3","springgreen3")) # adds ellipses around the point groups (OPTIONAL!)
-##adjust colors to match each year, pch=20 makes it bullet points 
-points(nmds.plot,"sites", pch=20, col= "tomato4", select = metadata$Variable == "Level 1")     # set the metadata to the variable you need it to be 
+##adjust colors to match each year, pch=20 makes it bullet points
+points(nmds.plot,"sites", pch=20, col= "tomato4", select = metadata$Variable == "Level 1")     # set the metadata to the variable you need it to be
 points(nmds.plot,"sites", pch=20, col= "steelblue4", select = metadata$Variable == "Level 2")  # and set a different color to each level of the variable
 points(nmds.plot,"sites", pch=20, col= "springgreen4", select = metadata$Variable == "Level 3")
 ##Add Stress Value
-text(1.2,1.5,"2D Stress: ", cex=0.9) # make sure you add the stress value in an empty portion of the graph 
+text(1.2,1.5,"2D Stress: ", cex=0.9) # make sure you add the stress value in an empty portion of the graph
 ##Adding legend
 legend("topleft",legend= c("Level 1","Level 2", "Level 3"),   # customize the legend to match the colors and variables
        title = "Year",
-       col=c("tomato4","steelblue4","springgreen4"), 
+       col=c("tomato4","steelblue4","springgreen4"),
        pch=19, cex=1)
 ##Adding title
 title(main="nMDS of Relative Abundances by Variable") # adds a title to the graph
 
-## If making plots for multiple variables, you'll have to redo the point 
+## If making plots for multiple variables, you'll have to redo the point
 ## customization and legend customization to match the variable
 ###### CCA analysis & plots ######
 library(vegan)
@@ -683,39 +690,39 @@ library(vegan)
 ccamodel <- cca(dat.ra~., metadata[,c(7:37)])
 finalmodel<- ordistep(ccamodel, scope=formula(ccamodel))
 vif.cca(finalmodel) ## values should be under 10
-# If VIF>10, the variable presents colinearity with another or other variables. 
+# If VIF>10, the variable presents colinearity with another or other variables.
 # In that case, delete the variable from initial dataset and redo the analysis.
-# VIF = 1 for completely independent variables,and values above 10 or 20 
+# VIF = 1 for completely independent variables,and values above 10 or 20
 # (depending on your taste) are regarded as highly multicollinear (dependent on other variables).
 
 # Test the significance of the entire CCA model
 anova.cca(finalmodel) #should be significant! (p < 0.05)
-#           Df ChiSquare      F Pr(>F)    
+#           Df ChiSquare      F Pr(>F)
 # Model     18    1.6290 5.7307  0.001 ***
-# Residual 522    8.2434                  
-# ---  
+# Residual 522    8.2434
+# ---
 
-finalmodel 
-## Note that "Total Inertia" is the total variance in species (observations matrix) distributions. 
-## "Constrained Inertia" is the variance explained by the environmental variables (gradients matrix). 
-## The "Proportion" values represent the percentages of variance of species distributions explained  
-## by Constrained (environmental) and Unconstrained variables. Eigenvalues of constrained and 
-## unconstrained axes represent the amount of variance explained by each CCA axis (graphs usually 
+finalmodel
+## Note that "Total Inertia" is the total variance in species (observations matrix) distributions.
+## "Constrained Inertia" is the variance explained by the environmental variables (gradients matrix).
+## The "Proportion" values represent the percentages of variance of species distributions explained
+## by Constrained (environmental) and Unconstrained variables. Eigenvalues of constrained and
+## unconstrained axes represent the amount of variance explained by each CCA axis (graphs usually
 ## present the first two constrained axes, so take a look at their values).
 
 #Total Inertia = total variance in species (observed distributions)
 #Unconstrained Inertia = the variance explained by the environmental variables
 
 #               Inertia Proportion Rank
-# Total           9.872      1.000     
+# Total           9.872      1.000
 # Constrained     1.629      0.165   18
 # Unconstrained   8.243      0.835  522
 # Inertia is scaled Chi-square
 
-R2.adj.cca <- RsquareAdj(finalmodel) 
-# adjusting the R-squared value: The adjusted R2 tells you the percentage of 
-# variation explained by only the independent variables that actually affect 
-# the dependent variable; also indicates how well terms fit a curve or line, 
+R2.adj.cca <- RsquareAdj(finalmodel)
+# adjusting the R-squared value: The adjusted R2 tells you the percentage of
+# variation explained by only the independent variables that actually affect
+# the dependent variable; also indicates how well terms fit a curve or line,
 # but adjusts for the number of terms in a model
 R2.adj.cca
 # r.squared: 0.173352
@@ -726,33 +733,33 @@ summary(finalmodel)
 ## Correlation between the variables within the model
 # Creates pairs plot to see the correlation statistics between each variable
 library(psych)
-pairs.panels(metadata[,c(7:19,21:24,33)]) # use the metadata columns that are 
+pairs.panels(metadata[,c(7:19,21:24,33)]) # use the metadata columns that are
                                           # in your final CCA model
 
 ### Creating CCA plots
 cca.p <- plot(finalmodel,type = "none")
 
 # Fitting of the environmental variables to the CCA plot
-ef.cca<- envfit(cca.p,metadata[,c(7:10,12:19,21,23,24,31,33)]) # use the metadata columns that are 
+ef.cca<- envfit(cca.p,metadata[,c(7:10,12:19,21,23,24,31,33)]) # use the metadata columns that are
                                                                # in your final CCA model
 
 # Creating R2 threshold for vectors
-# Function: select.envfit - Setting r2 cutoff values to display in an 
+# Function: select.envfit - Setting r2 cutoff values to display in an
 #                           ordination.
 # function (select.envfit) filters the resulting list of function (envfit) based on their p values. This allows to display only significant values in the final plot.
 # RUN FUNCTION FIRST!!
 select.envfit<-function(fit, r.select){ #needs two sorts of input: fit= result of envfit, r.select= numeric, correlation minimum threshold
-  for (i in 1:length(fit$vectors$r)) { #run for-loop through the entire length of the column r in object fit$vectors$r starting at i=1 # nolint # nolint # nolint
+  for (i in 1:length(fit$vectors$r)) { #run for-loop through the entire length of the column r in object fit$vectors$r starting at i=1
     if (fit$vectors$r[i]<r.select) { #Check whether r<r.select, i.e. if the correlation is weaker than the threshold value. Change this Parameter for r-based selection
       fit$vectors$arrows[i,]=NA #If the above statement is TRUE, i.e. r is smaller than r.select, then the coordinates of the vectors are set to NA, so they cannot be displayed
       i=i+1 #increase the running parameter i from 1 to 2, i.e. check the next value in the column until every value has been checked
     }
   }
-  return(fit) 
-} 
+  return(fit)
+}
 
 # Running select function on actual data
-ef.cca<- select.envfit(ef.cca, 0.3) # only includes significant variables 
+ef.cca<- select.envfit(ef.cca, 0.3) # only includes significant variables
                                     # with an R2 of 0.3 or higher
 
 # Setting up base plot
@@ -762,15 +769,20 @@ abline(h = 0, v = 0, col = "white", lwd = 2)
 box()
 
 # EDIT POINTS AS IT MATCHES YOUR ANALYSIS!
-# Adding the points 
+# Adding the points
 points(cca.p,"sites", pch=19, col= "goldenrod3", select = metadata$Variable == "Level 1")
 points(cca.p,"sites", pch=19, col= "mediumpurple2", select = metadata$Variable == "Level 2")
 points(cca.p,"sites", pch=19, col= "springgreen4", select = metadata$Variable == "Level 3")
 # Plotting envfit vectors
 plot(ef.cca, col = "black", p.max=0.05)
 # Add legend & Title
-legend(locator(1),legend=c("Level 1","Level 2", "Level 3"), 
-       col=c("goldenrod3","mediumpurple2", "springgreen4"), pch=19, cex=1.2, 
+legend(locator(1),legend=c("Level 1","Level 2", "Level 3"),
+       col=c("goldenrod3","mediumpurple2", "springgreen4"), pch=19, cex=1.2,
        title = "Variable")
 # locator(1) allows you to choose a place to place the legend within your plot
 title(main="Title")
+
+
+
+
+

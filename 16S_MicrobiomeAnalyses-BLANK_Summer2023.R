@@ -1,4 +1,4 @@
-## 16S Microbiome Analyses - Molecular Microbiology & Genomics Lab @ Nova Southeastern University ##
+### 16S Microbiome Analyses - Molecular Microbiology & Genomics Lab @ Nova Southeastern University ###
 ## This R-Script includes routine microbiome analyses conducted using
 ## the 16S rRNA gene (V4 region (primers 515F/806R)).
 ## Initial data cleaning starts from QIIME2, so you will need the following 
